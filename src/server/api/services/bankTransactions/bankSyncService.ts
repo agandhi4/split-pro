@@ -7,6 +7,10 @@ import { TellerService, type TellerTransaction } from './teller';
 // fetching from the provider and persisting to BankTransaction.
 const tellerService = new TellerService();
 
+// In-memory lock to prevent concurrent syncs for the same user.
+// Safe for single-instance deployments (self-hosted Synology NAS).
+const activeSyncs = new Set<number>();
+
 function isTodayUTC(date: Date | null | undefined): boolean {
   if (!date) return false;
   const now = new Date();
@@ -21,7 +25,7 @@ function isTodayUTC(date: Date | null | undefined): boolean {
  * Checks whether an auto sync should run for this connection.
  * Auto sync runs once per UTC calendar day on first page visit.
  */
-export function canAutoSync(connection: BankConnection): boolean {
+export function canAutoSync(connection: Pick<BankConnection, 'lastAutoSync'>): boolean {
   return !isTodayUTC(connection.lastAutoSync);
 }
 
@@ -29,7 +33,7 @@ export function canAutoSync(connection: BankConnection): boolean {
  * Checks whether a manual sync is available for this connection.
  * Users get one manual refresh per UTC calendar day.
  */
-export function canManualSync(connection: BankConnection): boolean {
+export function canManualSync(connection: Pick<BankConnection, 'lastManualSync'>): boolean {
   return !isTodayUTC(connection.lastManualSync);
 }
 
@@ -172,12 +176,19 @@ export async function syncConnection(
 
 /**
  * Syncs all connections for a user. Used on Transactions page load.
- * Only syncs connections that are eligible (haven't synced today for auto).
+ * Only syncs connections that are eligible (haven't synced today).
+ * Uses an in-memory lock to prevent concurrent syncs for the same user
+ * (safe for single-instance self-hosted deployments).
  */
 export async function syncAllConnections(
   userId: number,
   syncType: 'auto' | 'manual',
 ): Promise<{ totalSynced: number; totalNew: number }> {
+  // Prevent concurrent syncs for the same user (e.g., two tabs)
+  if (activeSyncs.has(userId)) {
+    return { totalSynced: 0, totalNew: 0 };
+  }
+
   const connections = await db.bankConnection.findMany({
     where: { userId },
   });
@@ -190,31 +201,37 @@ export async function syncAllConnections(
     return { totalSynced: 0, totalNew: 0 };
   }
 
-  let totalSynced = 0;
-  let totalNew = 0;
+  activeSyncs.add(userId);
 
-  const results = await Promise.all(
-    eligibleConnections.map(async (conn) => {
-      try {
-        return await syncConnection(conn, syncType);
-      } catch (err) {
-        console.error(
-          `[bank-sync] Failed to sync connection ${conn.id.slice(0, 8)} ` +
-            `(${conn.institutionName ?? conn.provider}): ${err instanceof Error ? err.message : String(err)}`,
-        );
-        return null;
+  try {
+    let totalSynced = 0;
+    let totalNew = 0;
+
+    const results = await Promise.all(
+      eligibleConnections.map(async (conn) => {
+        try {
+          return await syncConnection(conn, syncType);
+        } catch (err) {
+          console.error(
+            `[bank-sync] Failed to sync connection ${conn.id.slice(0, 8)} ` +
+              `(${conn.institutionName ?? conn.provider}): ${err instanceof Error ? err.message : String(err)}`,
+          );
+          return null;
+        }
+      }),
+    );
+
+    results.forEach((result) => {
+      if (result) {
+        totalSynced += result.synced;
+        totalNew += result.newCount;
       }
-    }),
-  );
+    });
 
-  results.forEach((result) => {
-    if (result) {
-      totalSynced += result.synced;
-      totalNew += result.newCount;
-    }
-  });
-
-  return { totalSynced, totalNew };
+    return { totalSynced, totalNew };
+  } finally {
+    activeSyncs.delete(userId);
+  }
 }
 
 /**
@@ -251,6 +268,14 @@ export async function migrateFromLegacy(userId: number): Promise<BankConnection 
     },
     update: {},
   });
+
+  // Clear the legacy field so this migration doesn't re-run on every page visit
+  await db.user.update({
+    where: { id: userId },
+    data: { obapiProviderId: null },
+  });
+
+  console.info(`[bank-sync] Migrated legacy connection for user ${userId}`);
 
   return connection;
 }
