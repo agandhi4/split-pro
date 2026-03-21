@@ -134,18 +134,23 @@ export async function createExpense(
 
     sendExpensePushNotification(createdExpense.id).catch(console.error);
 
-    // Link the BankTransaction to the created expense (transitions state to 'split')
+    // Link the BankTransaction to the created expense (transitions state to 'split').
+    // Scoped to currentUserId to prevent cross-user transaction state corruption.
     if (transactionId) {
       db.bankTransaction
-        .update({
-          where: { id: transactionId },
+        .updateMany({
+          where: { id: transactionId, userId: currentUserId },
           data: { state: 'split', expenseId: createdExpense.id },
         })
+        .then(({ count }) => {
+          if (count === 0) {
+            console.warn(
+              `[split-service] BankTransaction ${transactionId} not found for user ${currentUserId} — may be a legacy Plaid/GoCardless ID`,
+            );
+          }
+        })
         .catch((err) => {
-          // Non-fatal: the expense was created successfully, but the transaction
-          // state wasn't updated. This can happen if the transactionId doesn't
-          // match a BankTransaction (e.g., legacy Plaid transaction IDs).
-          console.warn(
+          console.error(
             `[split-service] Failed to mark BankTransaction ${transactionId} as split:`,
             err instanceof Error ? err.message : err,
           );
@@ -214,6 +219,19 @@ export async function deleteExpense(expenseId: string, deletedBy: number) {
 
   await db.$transaction(operations);
   sendExpensePushNotification(expenseId).catch(console.error);
+
+  // Reset any linked BankTransaction back to 'unhandled' so it reappears in the inbox
+  db.bankTransaction
+    .updateMany({
+      where: { expenseId },
+      data: { state: 'unhandled', expenseId: null },
+    })
+    .catch((err) => {
+      console.warn(
+        `[split-service] Failed to reset BankTransaction for deleted expense ${expenseId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    });
 }
 
 export async function editExpense(
@@ -336,7 +354,32 @@ export async function editExpense(
 
   await db.$transaction(operations);
   sendExpensePushNotification(expenseId).catch(console.error);
-  return { id: expenseId }; // Return the updated expense
+
+  // Reconcile BankTransaction state when transactionId changes during edit.
+  // Reset the old transaction (if it changed) and mark the new one as split.
+  const oldTransactionId = expense.transactionId;
+  if (oldTransactionId !== transactionId) {
+    // Reset old BankTransaction back to unhandled
+    if (oldTransactionId) {
+      db.bankTransaction
+        .updateMany({
+          where: { id: oldTransactionId, userId: currentUserId },
+          data: { state: 'unhandled', expenseId: null },
+        })
+        .catch(console.warn);
+    }
+    // Mark new BankTransaction as split
+    if (transactionId) {
+      db.bankTransaction
+        .updateMany({
+          where: { id: transactionId, userId: currentUserId },
+          data: { state: 'split', expenseId },
+        })
+        .catch(console.warn);
+    }
+  }
+
+  return { id: expenseId };
 }
 
 export async function getCompleteFriendsDetails(userId: number) {
