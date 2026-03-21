@@ -6,10 +6,20 @@ This feature was provided by @alexanderwassbjer, who is currently maintaining re
 
 ## Providers
 
-- Plaid is the recommended provider.
+- **Teller** — free for up to 100 connections, US-focused, 5,000+ institutions. See https://teller.io/docs.
+- **Plaid** — widely supported but more expensive. See https://plaid.com/docs/institutions/.
 - GoCardless is deprecated and no longer accepts new signups.
 
-For Plaid-supported countries and institutions, see https://plaid.com/docs/institutions/.
+Only one provider can be active at a time. The first configured provider wins (GoCardless > Plaid > Teller).
+
+## Setup (Teller)
+
+1. Create a Teller account at https://teller.io and obtain your `application_id`.
+2. For development/production: download your mTLS certificate and key from the Teller Dashboard.
+3. Add the Teller environment variables to your deployment.
+4. Verify configuration from the account page in SplitPro.
+
+See [CONFIGURATION](CONFIGURATION.md) for the exact variables.
 
 ## Setup (Plaid)
 
@@ -32,8 +42,9 @@ See [CONFIGURATION](CONFIGURATION.md) for the exact variables.
 
 ## Troubleshooting
 
-- If the "Connect to bank" option does not appear, confirm your Plaid keys and environment.
-- Ensure `PLAID_COUNTRY_CODES` matches the institutions you want to connect.
+- If the “Connect to bank” option does not appear, confirm your provider keys and environment.
+- **Plaid**: Ensure `PLAID_COUNTRY_CODES` matches the institutions you want to connect.
+- **Teller**: Ensure `TELLER_CERT_PATH` and `TELLER_KEY_PATH` are set for development/production environments.
 
 ## UI walkthrough video
 

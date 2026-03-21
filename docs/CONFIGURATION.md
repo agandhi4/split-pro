@@ -56,6 +56,14 @@ Used for magic-link login and invites.
 - `PLAID_COUNTRY_CODES`: Country codes list (per Plaid docs).
 - `PLAID_INTERVAL_IN_DAYS`: Lookback window for fetching transactions (default 30 days).
 
+#### Teller
+
+- `TELLER_APPLICATION_ID`: Your Teller application ID.
+- `TELLER_ENVIRONMENT`: `sandbox`, `development`, or `production`.
+- `TELLER_CERT_PATH`: Path to mTLS client certificate (required for development/production).
+- `TELLER_KEY_PATH`: Path to mTLS private key (required for development/production).
+- `TELLER_INTERVAL_IN_DAYS`: Lookback window for fetching transactions (default 30 days).
+
 #### GoCardless (deprecated)
 
 - `GOCARDLESS_COUNTRY`

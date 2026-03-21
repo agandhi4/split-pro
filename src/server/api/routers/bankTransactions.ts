@@ -55,7 +55,7 @@ export const bankTransactionsRouter = createTRPCRouter({
   getInstitutions: protectedProcedure
     .output(InstitutionsOutput)
     .query(async () => await bankTransactionService.getInstitutions()),
-  // Explicit for PLAID
+  // Used by Plaid (token exchange) and Teller (direct token storage)
   exchangePublicToken: protectedProcedure
     .input(z.string())
     .output(
@@ -67,7 +67,8 @@ export const bankTransactionsRouter = createTRPCRouter({
         .optional(),
     )
     .mutation(async ({ input: publicToken, ctx }) => {
-      if (whichBankConnectionConfigured() === 'PLAID') {
+      const provider = whichBankConnectionConfigured();
+      if (provider === 'PLAID' || provider === 'TELLER') {
         const res = await bankTransactionService?.getProvider()?.exchangePublicToken?.(publicToken);
 
         if (!res) {

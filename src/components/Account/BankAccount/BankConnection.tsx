@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { BankAccountSelect } from './BankAccountSelect';
 import { PlaidLink } from './PlaidLink';
+import { TellerConnect } from './TellerConnect';
 import { api } from '~/utils/api';
 import type { ButtonProps } from '~/components/ui/button';
 
@@ -53,6 +54,8 @@ export const BankConnection: React.FC<BankConnectionProps> = ({
         <PlaidLink onConnect={onConnectToBank} onSuccess={fetchUser}>
           {children}
         </PlaidLink>
+      ) : bankConnection === 'TELLER' ? (
+        <TellerConnect onSuccess={fetchUser}>{children}</TellerConnect>
       ) : (
         bankConnection === 'GOCARDLESS' &&
         userQuery.data?.bankingId &&

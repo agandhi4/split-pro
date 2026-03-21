@@ -2,6 +2,7 @@ import { type BankProviders, whichBankConnectionConfigured } from '~/server/bank
 import type { TransactionOutput } from '~/types/bank.types';
 import { GoCardlessService } from './gocardless';
 import { PlaidService } from './plaid';
+import { TellerService } from './teller';
 import { TRPCError } from '@trpc/server';
 
 abstract class AbstractBankTransactionService {
@@ -27,7 +28,9 @@ export class BankTransactionService {
         ? new GoCardlessService()
         : this.connectedProvider === 'PLAID'
           ? new PlaidService()
-          : null;
+          : this.connectedProvider === 'TELLER'
+            ? new TellerService()
+            : null;
   }
 
   getProvider(): AbstractBankTransactionService | null {
