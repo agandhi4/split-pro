@@ -329,7 +329,8 @@
     "add_expense": "Add Expense",
     "recurring": "Recurring",
     "balances": "Balances",
-    "groups": "Groups"
+    "groups": "Groups",
+    "transactions": "Transactions"
   },
   "recurrence": {
     "title": "Recurrence",

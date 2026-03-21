@@ -70,16 +70,17 @@ const AddPage: NextPageWithUser<{
   // Pre-fill from transaction query params (from the split drawer)
   useEffect(() => {
     if (_expenseId || !qAmount) return;
-    const parsed = Number(String(qAmount).replace('-', ''));
-    if (!isNaN(parsed) && isFinite(parsed)) {
-      setAmount(BigInt(Math.round(parsed * 100)));
-      setAmountStr(String(qAmount).replace('-', ''));
-    }
+    const amountStr = String(qAmount).replace('-', '');
+    const currency = qCurrency ? parseCurrencyCode(String(qCurrency)) : 'USD';
+    const { toSafeBigInt } = getCurrencyHelpersCached(currency);
+    const bigIntAmount = toSafeBigInt(amountStr);
+    setAmount(bigIntAmount);
+    setAmountStr(amountStr);
     if (qDescription) setDescription(String(qDescription));
     if (qExpenseDate) setExpenseDate(new Date(String(qExpenseDate)));
-    if (qCurrency) setCurrency(parseCurrencyCode(String(qCurrency)));
+    if (qCurrency) setCurrency(currency);
     if (qTransactionId) setTransactionId(String(qTransactionId));
-  }, [qAmount, qCurrency, qDescription, qExpenseDate, qTransactionId, _expenseId, setAmount, setAmountStr, setDescription, setExpenseDate, setCurrency, setTransactionId]);
+  }, [qAmount, qCurrency, qDescription, qExpenseDate, qTransactionId, _expenseId, setAmount, setAmountStr, setDescription, setExpenseDate, setCurrency, setTransactionId, getCurrencyHelpersCached]);
   const groupQuery = api.group.getGroupDetails.useQuery(
     { groupId: _groupId },
     { enabled: Boolean(_groupId) && !_expenseId },

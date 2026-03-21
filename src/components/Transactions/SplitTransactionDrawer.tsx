@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import { useRouter } from 'next/router';
-import { useTranslation } from 'next-i18next';
 import { toast } from 'sonner';
 import { api } from '~/utils/api';
 import { AppDrawer } from '~/components/ui/drawer';
@@ -34,7 +33,6 @@ export const SplitTransactionDrawer: React.FC<SplitTransactionDrawerProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { t } = useTranslation();
   const router = useRouter();
   const [filter, setFilter] = useState('');
 

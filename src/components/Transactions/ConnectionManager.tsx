@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import { useTranslation } from 'next-i18next';
 import { toast } from 'sonner';
-import { Settings, Trash2, Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { api } from '~/utils/api';
 import { AppDrawer } from '~/components/ui/drawer';
 import { Button } from '~/components/ui/button';
@@ -17,7 +16,6 @@ interface ConnectionManagerProps {
  * that opens Teller Connect for new enrollments.
  */
 export const ConnectionManager: React.FC<ConnectionManagerProps> = ({ trigger }) => {
-  const { t } = useTranslation();
   const utils = api.useUtils();
   const [open, setOpen] = useState(false);
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
