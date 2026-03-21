@@ -1,4 +1,5 @@
 import {
+  InboxStackIcon as SolidInboxStackIcon,
   ListBulletIcon as SolidListBulletIcon,
   PlusCircleIcon as SolidPlusCircleIcon,
   ChartPieIcon as SolidScaleIcon,
@@ -12,6 +13,7 @@ import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import React from 'react';
 import { LoadingSpinner } from '../ui/spinner';
+import { api } from '~/utils/api';
 
 interface MainLayoutProps {
   title?: React.ReactNode;
@@ -73,6 +75,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             currentPath={currentPath}
           />
           <NavItemDesktop
+            title={t?.('navigation.transactions') ?? 'Transactions'}
+            Icon={SolidInboxStackIcon}
+            link="/transactions"
+            currentPath={currentPath}
+            badge={<TransactionsBadge />}
+          />
+          <NavItemDesktop
             title={t?.('navigation.account') ?? 'Account'}
             Icon={SolidUserCircleIcon}
             link="/account"
@@ -128,6 +137,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           currentPath={currentPath}
         />
         <NavItem
+          title={t?.('navigation.transactions') ?? 'Inbox'}
+          Icon={SolidInboxStackIcon}
+          link="/transactions"
+          currentPath={currentPath}
+          badge={<TransactionsBadge />}
+        />
+        <NavItem
           title={t?.('navigation.account') ?? 'Account'}
           Icon={SolidUserCircleIcon}
           link="/account"
@@ -143,17 +159,21 @@ interface NavItemProps {
   Icon: LucideIcon;
   link: string;
   currentPath?: string;
+  badge?: React.ReactNode;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath }) => {
+const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath, badge }) => {
   const isActive = currentPath?.startsWith(link);
 
   return (
     <Link
       href={link}
-      className={clsx('flex w-32 flex-col items-center justify-between gap-2 py-4')}
+      className={clsx('flex min-w-0 flex-1 flex-col items-center justify-between gap-2 py-4')}
     >
-      <Icon className={clsx('h-7 w-7', isActive ? 'text-cyan-500' : 'text-gray-600')} />
+      <div className="relative">
+        <Icon className={clsx('h-7 w-7', isActive ? 'text-cyan-500' : 'text-gray-600')} />
+        {badge}
+      </div>
       <span className={clsx('text-xs', isActive ? 'font-medium text-cyan-500' : 'text-gray-500')}>
         {title}
       </span>
@@ -161,12 +181,15 @@ const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath }) => 
   );
 };
 
-const NavItemDesktop: React.FC<NavItemProps> = ({ title, Icon, link, currentPath }) => {
+const NavItemDesktop: React.FC<NavItemProps> = ({ title, Icon, link, currentPath, badge }) => {
   const isActive = currentPath?.startsWith(link);
 
   return (
     <Link href={link} className={clsx('flex w-[150px] items-center gap-2 py-4')}>
-      <Icon className={clsx('h-7 w-7', isActive ? 'text-cyan-500' : 'text-gray-600')} />
+      <div className="relative">
+        <Icon className={clsx('h-7 w-7', isActive ? 'text-cyan-500' : 'text-gray-600')} />
+        {badge}
+      </div>
       <span
         className={clsx('capitalize', isActive ? 'font-medium text-cyan-500' : 'text-gray-500')}
       >
@@ -175,4 +198,22 @@ const NavItemDesktop: React.FC<NavItemProps> = ({ title, Icon, link, currentPath
     </Link>
   );
 };
+
+const TransactionsBadge: React.FC = () => {
+  const isEnabled = api.transactions.isEnabled.useQuery();
+  const countQuery = api.transactions.unhandledCount.useQuery(undefined, {
+    refetchInterval: 60_000,
+    enabled: isEnabled.data?.enabled === true,
+  });
+
+  const count = countQuery.data;
+  if (!count || count === 0) return null;
+
+  return (
+    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-500 px-1 text-[10px] font-bold text-white">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+};
+
 export default MainLayout;
