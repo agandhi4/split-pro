@@ -34,6 +34,7 @@ const AddPage: NextPageWithUser<{
     resetState,
     setCronExpression,
     setFileKey,
+    setTransactionId,
   } = useAddExpenseStore((s) => s.actions);
   const currentUser = useAddExpenseStore((s) => s.currentUser);
 
@@ -51,11 +52,34 @@ const AddPage: NextPageWithUser<{
   }, [setCurrentUser, user]);
 
   const router = useRouter();
-  const { friendId, groupId, expenseId } = router.query;
+  const {
+    friendId,
+    groupId,
+    expenseId,
+    amount: qAmount,
+    currency: qCurrency,
+    description: qDescription,
+    expenseDate: qExpenseDate,
+    transactionId: qTransactionId,
+  } = router.query;
 
   const _groupId = parseInt(groupId as string);
   const _friendId = parseInt(friendId as string);
   const _expenseId = expenseId as string;
+
+  // Pre-fill from transaction query params (from the split drawer)
+  useEffect(() => {
+    if (_expenseId || !qAmount) return;
+    const parsed = Number(String(qAmount).replace('-', ''));
+    if (!isNaN(parsed) && isFinite(parsed)) {
+      setAmount(BigInt(Math.round(parsed * 100)));
+      setAmountStr(String(qAmount).replace('-', ''));
+    }
+    if (qDescription) setDescription(String(qDescription));
+    if (qExpenseDate) setExpenseDate(new Date(String(qExpenseDate)));
+    if (qCurrency) setCurrency(parseCurrencyCode(String(qCurrency)));
+    if (qTransactionId) setTransactionId(String(qTransactionId));
+  }, [qAmount, qCurrency, qDescription, qExpenseDate, qTransactionId, _expenseId, setAmount, setAmountStr, setDescription, setExpenseDate, setCurrency, setTransactionId]);
   const groupQuery = api.group.getGroupDetails.useQuery(
     { groupId: _groupId },
     { enabled: Boolean(_groupId) && !_expenseId },
