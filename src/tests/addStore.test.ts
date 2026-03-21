@@ -1,4 +1,4 @@
-import { SplitType, type User } from '@prisma/client';
+import { SplitType } from '@prisma/client';
 
 import {
   type AddExpenseState,
@@ -14,25 +14,21 @@ jest.mock('~/utils/array', () => ({
 }));
 
 // Create mock users for testing
-const createMockUser = (id: number, name: string, email: string): User => ({
+const createMockUser = (id: number, name: string, email: string): Participant => ({
   id,
   name,
   email,
   currency: 'USD',
   emailVerified: null,
   image: null,
-  preferredLanguage: 'en',
-  obapiProviderId: null,
-  bankingId: null,
-  hiddenFriendIds: [],
 });
 
-const user1: User = createMockUser(1, 'Alice', 'alice@example.com');
-const user2: User = createMockUser(2, 'Bob', 'bob@example.com');
-const user3: User = createMockUser(3, 'Charlie', 'charlie@example.com');
+const user1: Participant = createMockUser(1, 'Alice', 'alice@example.com');
+const user2: Participant = createMockUser(2, 'Bob', 'bob@example.com');
+const user3: Participant = createMockUser(3, 'Charlie', 'charlie@example.com');
 
 // Create participants with initial amounts
-const createParticipants = (users: User[], amounts: bigint[] = []): Participant[] =>
+const createParticipants = (users: Participant[], amounts: bigint[] = []): Participant[] =>
   users.map((user, index) => ({
     ...user,
     amount: amounts[index] ?? 0n,

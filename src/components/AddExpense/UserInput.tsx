@@ -62,10 +62,6 @@ export const UserInput: React.FC<{
         emailVerified: new Date(),
         image: null,
         currency: 'USD',
-        obapiProviderId: null,
-        bankingId: null,
-        preferredLanguage: '',
-        hiddenFriendIds: [],
       });
     }
   };

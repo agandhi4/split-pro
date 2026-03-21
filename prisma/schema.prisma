@@ -51,6 +51,8 @@ model User {
   accounts            Account[]
   friendBalances      BalanceView[]        @relation("FriendBalanceView")
   userBalances        BalanceView[]        @relation("UserBalanceView")
+  bankConnections     BankConnection[]
+  bankTransactions    BankTransaction[]
   cachedBankData      CachedBankData[]     @relation("UserCachedBankData")
   addedExpenses       Expense[]            @relation("AddedByUser")
   deletedExpenses     Expense[]            @relation("DeletedByUser")
@@ -61,7 +63,8 @@ model User {
   groups              Group[]
   associatedGroups    GroupUser[]
   sessions            Session[]
-  hiddenFriendIds     Int[]                @default([])
+  hiddenFriendIds           Int[]                @default([])
+  lastViewedTransactionsAt  DateTime?
 
   @@schema("public")
 }
@@ -164,6 +167,7 @@ model Expense {
   paidByUser          User                 @relation("PaidByUser", fields: [paidBy], references: [id], onDelete: Cascade)
   recurrence          ExpenseRecurrence?   @relation(fields: [recurrenceId], references: [id], onDelete: SetNull)
   updatedByUser       User?                @relation("UpdatedByUser", fields: [updatedBy], references: [id])
+  bankTransaction     BankTransaction?
   expenseNotes        ExpenseNote[]
   expenseParticipants ExpenseParticipant[]
 
@@ -228,6 +232,56 @@ model CachedBankData {
   updatedAt       DateTime @updatedAt
   user            User     @relation("UserCachedBankData", fields: [userId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
+}
+
+/// Represents a single bank enrollment via an external provider (e.g., Teller).
+/// SECURITY: accessToken grants read access to bank data. The database should use
+/// encryption at rest (e.g., LUKS, AWS RDS encryption). Application-level encryption
+/// is a future enhancement. Same security posture as User.obapiProviderId (legacy).
+model BankConnection {
+  id              String            @id @default(cuid())
+  userId          Int
+  provider        String
+  accessToken     String
+  institutionName String?
+  accountName     String?
+  accountType     String?
+  lastFour        String?
+  lastSyncedAt    DateTime?
+  lastAutoSync    DateTime?
+  lastManualSync  DateTime?
+  createdAt       DateTime          @default(now())
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    BankTransaction[]
+
+  @@unique([userId, accessToken])
+  @@index([userId])
+  @@schema("public")
+}
+
+/// Persisted bank transaction for the inbox triage workflow.
+/// Transactions are synced from the provider and kept permanently (not cached).
+model BankTransaction {
+  id               String          @id // Provider's transaction ID (e.g., Teller's txn_xxx)
+  bankConnectionId String
+  userId           Int
+  amount           String          // Provider-supplied decimal string, signed (negative = debit). E.g., "-12.50"
+  currency         String
+  description      String
+  date             DateTime
+  status           String          @default("posted")
+  state            String          @default("unhandled")
+  dismissReason    String?
+  expenseId        String?         @unique @db.Uuid
+  createdAt        DateTime        @default(now())
+  bankConnection   BankConnection  @relation(fields: [bankConnectionId], references: [id], onDelete: Cascade)
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expense          Expense?        @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+
+  @@index([userId, state])
+  @@index([bankConnectionId])
+  @@index([date(sort: Desc)])
   @@schema("public")
 }
 

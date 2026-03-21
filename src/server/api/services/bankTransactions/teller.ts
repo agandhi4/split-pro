@@ -34,7 +34,7 @@ const ERROR_MESSAGES = {
   MISSING_APPLICATION_ID: 'Teller application ID is not configured',
 } as const;
 
-interface TellerAccount {
+export interface TellerAccount {
   id: string;
   enrollment_id: string;
   name: string;
@@ -49,7 +49,7 @@ interface TellerAccount {
   };
 }
 
-interface TellerTransaction {
+export interface TellerTransaction {
   id: string;
   account_id: string;
   amount: string;
@@ -282,6 +282,23 @@ export class TellerService extends AbstractBankProvider {
     // Teller Connect handles institution selection natively via its widget.
     // Unlike GoCardless, there's no need to fetch and display institutions separately.
     return [];
+  }
+
+  // Public API for the sync service to call directly, bypassing the AbstractBankProvider interface
+
+  async fetchAccounts(accessToken: string): Promise<TellerAccount[]> {
+    return this.tellerFetch<TellerAccount[]>('/accounts', accessToken);
+  }
+
+  async fetchTransactions(accessToken: string, accountId: string): Promise<TellerTransaction[]> {
+    const intervalInDays = env.TELLER_INTERVAL_IN_DAYS ?? TELLER_CONSTANTS.DEFAULT_INTERVAL_DAYS;
+    const startDate = format(subDays(new Date(), intervalInDays), TELLER_CONSTANTS.DATE_FORMAT);
+    const endDate = format(new Date(), TELLER_CONSTANTS.DATE_FORMAT);
+
+    return this.tellerFetch<TellerTransaction[]>(
+      `/accounts/${accountId}/transactions?start_date=${startDate}&end_date=${endDate}`,
+      accessToken,
+    );
   }
 
   private formatTransaction(

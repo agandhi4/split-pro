@@ -41,13 +41,12 @@ const AddPage: NextPageWithUser<{
 
   useEffect(() => {
     setCurrentUser({
-      ...user,
+      id: user.id,
       emailVerified: null,
       name: user.name ?? null,
       email: user.email ?? null,
       image: user.image ?? null,
-      obapiProviderId: user.obapiProviderId ?? null,
-      bankingId: user.bankingId ?? null,
+      currency: user.currency,
     });
   }, [setCurrentUser, user]);
 
