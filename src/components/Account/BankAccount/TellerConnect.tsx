@@ -19,6 +19,9 @@ function parseTellerEnvironment(value: string): TellerEnvironment {
 
 interface TellerConnectProps {
   onSuccess?: () => void;
+  /** When provided, called with the access token instead of the default exchangePublicToken flow.
+   *  Used by ConnectionManager to route through the new addConnection mutation. */
+  onAccessToken?: (accessToken: string) => Promise<void>;
   children: React.ReactElement<ButtonProps>;
 }
 
@@ -52,7 +55,7 @@ const useTellerConnectHook = (
       requestedRef.current = true;
       void fetchConfig();
     }
-  }, [applicationId, connectToBank]);
+  }, [applicationId]); // eslint-disable-line react-hooks/exhaustive-deps -- connectToBank is a mutation hook, requestedRef guards re-execution
 
   const { open, ready } = useTellerConnect({
     applicationId: applicationId ?? '',
@@ -68,7 +71,11 @@ const useTellerConnectHook = (
   };
 };
 
-export const TellerConnect: React.FC<TellerConnectProps> = ({ onSuccess, children }) => {
+export const TellerConnect: React.FC<TellerConnectProps> = ({
+  onSuccess,
+  onAccessToken,
+  children,
+}) => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const exchangePublicToken = api.bankTransactions.exchangePublicToken.useMutation();
@@ -77,9 +84,13 @@ export const TellerConnect: React.FC<TellerConnectProps> = ({ onSuccess, childre
     async (authorization: { accessToken: string }) => {
       setIsLoading(true);
       try {
-        // Send the access token to the server for storage via the shared exchangePublicToken
-        // Mutation. For Teller this just stores it directly, no server-side exchange needed.
-        await exchangePublicToken.mutateAsync(authorization.accessToken);
+        if (onAccessToken) {
+          // New-style: caller handles the token (e.g., ConnectionManager → addConnection)
+          await onAccessToken(authorization.accessToken);
+        } else {
+          // Legacy: store via exchangePublicToken → User.obapiProviderId
+          await exchangePublicToken.mutateAsync(authorization.accessToken);
+        }
         toast.success(t('bank_transactions.plaid.bank_connected_successfully'));
         onSuccess?.();
       } catch (error) {
@@ -89,7 +100,7 @@ export const TellerConnect: React.FC<TellerConnectProps> = ({ onSuccess, childre
         setIsLoading(false);
       }
     },
-    [exchangePublicToken, onSuccess, t],
+    [exchangePublicToken, onAccessToken, onSuccess, t],
   );
 
   const onTellerExit = useCallback(() => {

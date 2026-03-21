@@ -9,8 +9,9 @@ import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { cn } from '~/lib/utils';
 import { toast } from 'sonner';
-import { Check, RefreshCw, Search, X } from 'lucide-react';
+import { Check, RefreshCw, Search, Settings, X } from 'lucide-react';
 import { SplitTransactionDrawer } from '~/components/Transactions/SplitTransactionDrawer';
+import { ConnectionManager } from '~/components/Transactions/ConnectionManager';
 
 type TransactionState = 'unhandled' | 'split' | 'dismissed';
 
@@ -221,6 +222,13 @@ const TransactionsPage: NextPageWithUser = () => {
             className={cn('size-5', syncMutation.isPending && 'animate-spin')}
           />
         </Button>
+        <ConnectionManager
+          trigger={
+            <Button variant="ghost" size="sm">
+              <Settings className="size-5" />
+            </Button>
+          }
+        />
       </div>
     ),
     [syncMutation.mutate, syncMutation.isPending, syncStatusQuery.data?.canManualSync],
