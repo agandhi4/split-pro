@@ -57,11 +57,11 @@ const TransactionsPage: NextPageWithUser = () => {
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Fetch transactions
+  // Fetch transactions (200 covers ~6 months of typical usage)
   const transactionsQuery = api.transactions.list.useQuery({
     state: stateFilter,
     search: debouncedSearch || undefined,
-    limit: 50,
+    limit: 200,
   });
 
   // Fetch last viewed timestamp for "new" dot

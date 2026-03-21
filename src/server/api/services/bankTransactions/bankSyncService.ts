@@ -1,6 +1,7 @@
 import { type BankConnection } from '@prisma/client';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db';
+import { whichBankConnectionConfigured } from '~/server/bankTransactionHelper';
 import { TellerService, type TellerTransaction } from './teller';
 
 // Reuse the TellerService for API calls. The sync service orchestrates
@@ -243,6 +244,12 @@ export async function syncAllConnections(
  * concurrent calls safely (e.g., two tabs opening simultaneously).
  */
 export async function migrateFromLegacy(userId: number): Promise<BankConnection | null> {
+  // Only migrate Teller tokens — Plaid/GoCardless tokens are incompatible
+  const configuredProvider = whichBankConnectionConfigured();
+  if (configuredProvider !== 'TELLER') {
+    return null;
+  }
+
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { obapiProviderId: true },

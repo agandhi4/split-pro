@@ -29,7 +29,7 @@ export const transactionsRouter = createTRPCRouter({
               id: z.string(),
             })
             .optional(),
-          limit: z.number().min(1).max(100).default(50),
+          limit: z.number().min(1).max(200).default(50),
         })
         .optional(),
     )
@@ -37,14 +37,16 @@ export const transactionsRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const { state, search, connectionId, cursor, limit = 50 } = input ?? {};
 
-      // Fire migration and sync in the background — don't block the list response.
-      // User sees existing data immediately; fresh data appears on next load.
-      void migrateFromLegacy(userId).catch((err) => {
-        console.error(`[transactions] Legacy migration failed for user ${userId}:`, err);
-      });
-      void syncAllConnections(userId, 'auto').catch((err) => {
-        console.error(`[transactions] Auto-sync failed for user ${userId}:`, err);
-      });
+      // Migration must complete before sync (sync needs the BankConnection rows).
+      // Both run in background to avoid blocking the list response.
+      void (async () => {
+        try {
+          await migrateFromLegacy(userId);
+          await syncAllConnections(userId, 'auto');
+        } catch (err) {
+          console.error(`[transactions] Background sync failed for user ${userId}:`, err);
+        }
+      })();
 
       // Composite cursor: (date DESC, id DESC) for stable pagination.
       // Teller dates are day-precision, so many transactions share the same timestamp.

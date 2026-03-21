@@ -133,6 +133,25 @@ export async function createExpense(
     }
 
     sendExpensePushNotification(createdExpense.id).catch(console.error);
+
+    // Link the BankTransaction to the created expense (transitions state to 'split')
+    if (transactionId) {
+      db.bankTransaction
+        .update({
+          where: { id: transactionId },
+          data: { state: 'split', expenseId: createdExpense.id },
+        })
+        .catch((err) => {
+          // Non-fatal: the expense was created successfully, but the transaction
+          // state wasn't updated. This can happen if the transactionId doesn't
+          // match a BankTransaction (e.g., legacy Plaid transaction IDs).
+          console.warn(
+            `[split-service] Failed to mark BankTransaction ${transactionId} as split:`,
+            err instanceof Error ? err.message : err,
+          );
+        });
+    }
+
     return createdExpense;
   } catch (error) {
     // If we created a cron job but transaction failed, clean up the cron job
