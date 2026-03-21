@@ -154,6 +154,9 @@ importers:
       superjson:
         specifier: ^2.2.1
         version: 2.2.6
+      teller-connect-react:
+        specifier: ^0.2.3
+        version: 0.2.3(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.1(@types/react@19.2.1))(@types/react@19.2.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -4403,6 +4406,12 @@ packages:
       '@types/react':
         optional: true
 
+  react-script-hook@1.7.2:
+    resolution: {integrity: sha512-fhyCEfXb94fag34UPRF0zry1XGwmVY+79iibWwTqAoOiCzYJQOYTiWJ7CnqglA9tMSV8g45cQpHCMcBwr7dwhA==}
+    peerDependencies:
+      react: ^16.8.6 || 17 - 18
+      react-dom: ^16.8.6 || 17 - 18
+
   react-style-singleton@2.2.3:
     resolution: {integrity: sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ==}
     engines: {node: '>=10'}
@@ -4634,6 +4643,12 @@ packages:
   tapable@2.3.0:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
     engines: {node: '>=6'}
+
+  teller-connect-react@0.2.3:
+    resolution: {integrity: sha512-fH/BnTqbOjwJGNZAEbAcM1o21ZQO0fAt83PT6xuAVultSvklkUTyFJLg/iNvSHoCKyiCgy7G47E/ppAtYUCnyA==}
+    peerDependencies:
+      react: ^16.8.6 || 17 - 19
+      react-dom: ^16.8.6 || 17 - 19
 
   terser-webpack-plugin@5.3.16:
     resolution: {integrity: sha512-h9oBFCWrq78NyWWVcSwZarJkZ01c2AyGrzs1crmHZO3QUg9D61Wu4NPjBy69n7JqylFF5y+CsUZYmYEIZ3mR+Q==}
@@ -9748,6 +9763,11 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.1
 
+  react-script-hook@1.7.2(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+    dependencies:
+      react: 19.2.1
+      react-dom: 19.2.1(react@19.2.1)
+
   react-style-singleton@2.2.3(@types/react@19.2.1)(react@19.2.1):
     dependencies:
       get-nonce: 1.0.1
@@ -9969,6 +9989,12 @@ snapshots:
   tailwindcss@4.1.18: {}
 
   tapable@2.3.0: {}
+
+  teller-connect-react@0.2.3(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+    dependencies:
+      react: 19.2.1
+      react-dom: 19.2.1(react@19.2.1)
+      react-script-hook: 1.7.2(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
 
   terser-webpack-plugin@5.3.16(webpack@5.99.9):
     dependencies:
