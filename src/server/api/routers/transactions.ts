@@ -192,6 +192,7 @@ export const transactionsRouter = createTRPCRouter({
         where: {
           id: { in: input.transactionIds },
           userId: ctx.session.user.id,
+          state: 'unhandled',
         },
         data: {
           state: 'dismissed',
@@ -256,6 +257,30 @@ export const transactionsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      // Validate the token is real by calling the provider API before storing.
+      // This prevents storing arbitrary strings and ensures the token works.
+      if (input.provider === 'TELLER') {
+        const { TellerService } = await import(
+          '../services/bankTransactions/teller'
+        );
+        const teller = new TellerService();
+        try {
+          const accounts = await teller.fetchAccounts(input.accessToken);
+          if (!accounts || accounts.length === 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid bank connection — no accounts found for this token',
+            });
+          }
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Failed to validate bank connection — the token may be invalid',
+          });
+        }
+      }
+
       const connection = await ctx.db.bankConnection.upsert({
         where: {
           userId_accessToken: {

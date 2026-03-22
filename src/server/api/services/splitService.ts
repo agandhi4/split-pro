@@ -135,9 +135,11 @@ export async function createExpense(
     sendExpensePushNotification(createdExpense.id).catch(console.error);
 
     // Link the BankTransaction to the created expense (transitions state to 'split').
-    // Scoped to currentUserId to prevent cross-user transaction state corruption.
+    // This runs after the main transaction — if it fails the expense is still created,
+    // but the transaction reappears as unhandled (safe: user can re-split).
+    // Scoped to currentUserId to prevent cross-user state corruption.
     if (transactionId) {
-      db.bankTransaction
+      await db.bankTransaction
         .updateMany({
           where: { id: transactionId, userId: currentUserId },
           data: { state: 'split', expenseId: createdExpense.id },
@@ -148,12 +150,6 @@ export async function createExpense(
               `[split-service] BankTransaction ${transactionId} not found for user ${currentUserId} — may be a legacy Plaid/GoCardless ID`,
             );
           }
-        })
-        .catch((err) => {
-          console.error(
-            `[split-service] Failed to mark BankTransaction ${transactionId} as split:`,
-            err instanceof Error ? err.message : err,
-          );
         });
     }
 
